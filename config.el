@@ -21,8 +21,9 @@
 ;; See 'C-h v doom-font' for documentation and more examples of what they
 ;; accept. For example:
 ;;
-(setq doom-font (font-spec :family "JetBrainsMono Nerd Font")
-      doom-variable-pitch-font (font-spec :family "JetBrainsMono Nerd Font"))
+(setq doom-font (font-spec :family "Maple Mono NF CN")
+      doom-variable-pitch-font (font-spec :family "Maple Mono"))
+
 ;;
 ;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
 ;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
@@ -32,7 +33,7 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-one)
+(setq doom-theme 'doom-spacegrey)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -75,14 +76,16 @@
 ;; they are implemented.
 
 ;; keymap
-(map! "C-h" #'backward-delete-char-untabify)
-(map! "C-<tab>" #'centaur-tabs-forward
-      "C-<iso-lefttab>" #'centaur-tabs-backward)
-
+(map! "C-h" #'backward-delete-char-untabify)        ;; C-h == backspace
+;; (map! "C-<tab>" #'centaur-tabs-forward
+;;       "C-<iso-lefttab>" #'centaur-tabs-backward)    ;; C-TAB C-S-TAB 切换tabs
+(map! :g "M-0" #'treemacs-select-window)            ;; M-0 focus on treemacs
 (after! vertico
   (vertico-mouse-mode t))
+
 ;; auctex 设置默认latex引擎为xelatex
-(setq-default TeX-engine 'xetex) ;
+(setq-default TeX-engine 'xetex)
+
 ;; latex formatter
 (after! latex
   (setq-hook! 'LaTeX-mode-hook +format-with 'latexindent))
@@ -94,5 +97,12 @@
 
 ;; json formatter
 (after! json
-  (set-formatter! 'prettier :modes '(json-mode json-ts-mode))
-  (setq-hook! 'json-mode-hook +format-with 'prettier))
+    (setq-hook! 'json-ts-mode-hook +format-with 'prettier))
+
+;; c/c++ formatter
+(after! cc
+  (setq-hook! '(c-mode-hook c++-mode-hook c-ts-mode-hook c++-ts-mode-hook) +format-with 'clang-format))
+
+;; TODO c/c++ lsp use neocmakelsp, eglot default use --stdio is error
+(after! eglot
+    (set-eglot-client! '(cmake-mode cmake-ts-mode) '("neocmakelsp" "stdio")))
