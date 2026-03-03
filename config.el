@@ -22,7 +22,7 @@
 ;; accept. For example:
 ;;
 (setq doom-font (font-spec :family "Maple Mono NF CN")
-      doom-variable-pitch-font (font-spec :family "Maple Mono"))
+      doom-variable-pitch-font (font-spec :family "JetBrainsMono Nerd Font"))
 
 ;;
 ;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
@@ -77,14 +77,24 @@
 
 ;; keymap
 (map! "C-h" #'backward-delete-char-untabify)        ;; C-h == backspace
-;; (map! "C-<tab>" #'centaur-tabs-forward
-;;       "C-<iso-lefttab>" #'centaur-tabs-backward)    ;; C-TAB C-S-TAB 切换tabs
 (map! :g "M-0" #'treemacs-select-window)            ;; M-0 focus on treemacs
 (after! vertico
   (vertico-mouse-mode t))
 
 ;; auctex 设置默认latex引擎为xelatex
 (setq-default TeX-engine 'xetex)
+
+;; 设置org-roam的日记位置，用于和logseq同步
+(setq! org-roam-dailies-directory "journals")
+
+;; 设置默认的参考文献引用文件
+(setq! citar-bibliography '("~/org/ref.bib"))
+(setq! citar-library-paths '("~/zotero_attachments/")
+       citar-notes-paths '("~/org/roam/refs/"))
+(setq! citar-org-roam-subdir "refs")
+
+;; 设置ogr-noter笔记位置
+(setq! org-noter-notes-search-path '("~/org/" "~/org/roam/" "~/org/roam/refs/"))
 
 ;; latex formatter
 (after! latex
@@ -97,7 +107,11 @@
 
 ;; json formatter
 (after! json
-    (setq-hook! 'json-ts-mode-hook +format-with 'prettier))
+  (setq-hook! 'json-ts-mode-hook +format-with 'prettier))
+
+;; yaml formatter
+(after! yaml
+  (setq-hook! 'yaml-mode-hook +format-with 'prettier))
 
 ;; c/c++ formatter
 (after! cc
@@ -105,4 +119,60 @@
 
 ;; TODO c/c++ lsp use neocmakelsp, eglot default use --stdio is error
 (after! eglot
-    (set-eglot-client! '(cmake-mode cmake-ts-mode) '("neocmakelsp" "stdio")))
+  (set-eglot-client! '(cmake-mode cmake-ts-mode) '("neocmakelsp" "stdio")))
+
+;; TODO cita and org-noter integretion
+(defun citar-add-org-noter-document-property(key &optional entry)
+  "Set various properties PROPERTIES drawer when new Citar note is created."
+  (interactive)
+  (let* ((file-list-temp (list (citar--select-resource key :files t)))
+         (file-path-temp (alist-get 'file file-list-temp))
+         (cite-author (cdr (citar-get-field-with-value'(author) key)))
+         (cite-url (cdr (citar-get-field-with-value '(url) key))) )
+
+    (org-set-property "DIR" "attachments")
+    (org-set-property "NOTER_DOCUMENT" file-path-temp)
+    (org-set-property "Custom_ID" key)
+    (org-set-property "AUTHOR" cite-author)
+    (org-set-property "URL"    cite-url)
+    (org-roam-ref-add (concat "@" key))
+    (org-id-get-create) ))
+
+(advice-add 'citar-create-note :after #'citar-add-org-noter-document-property)
+(after! citar-org-roam
+  (add-to-list 'org-roam-capture-templates
+               '("c" "citar literature note" plain "%?"
+                 :target (file+head "%(expand-file-name citar-org-roam-subdir org-roam-directory)/${citar-citekey}.org"
+                                    "#+title: ${citar-title}\n#+subtitle: ${citar-author}, ${citar-date}\n#+created: %U\n#+last_modified: %U\n\n")
+                 :unnarrowed t)))
+
+(setq! citar-org-roam-capture-template-key "c")
+
+;; vertico-postframe 命令栏居中
+(setq! vertico-multiform-commands
+       '((t posframe
+          (vertico-posframe-poshandler . posframe-poshandler-frame-center)
+          (vertico-posframe-fallback-mode . vertico-buffer-mode))))
+(setq! vertico-multiform-mode 1)
+
+;; AI插件配置
+(use-package! gptel
+  :config
+  (setq!
+   gptel-model 'gemini-2.5-flash
+   gptel-backend (gptel-make-gemini "Gemini" :stream t :key gptel-api-key)))
+
+;; 翻译插件
+(use-package! gt
+  :config
+  (map! "C-c g" #'gt-translate)
+  (setq!
+   gt-langs '(en zh)
+   gt-default-translator (gt-translator
+                          :engines (gt-google-engine)
+                          :render (gt-buffer-render)))
+  (setq! gt-source-text-transformer
+         (lambda (c engine )
+           (string-replace "\n" " " c)))
+  (setq! gt-http-backend (pdd-url-backend :proxy "socks5://127.0.0.1:7897")))
+

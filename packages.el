@@ -54,3 +54,7 @@
 ;; (unpin! t)
 
 ;; (unpin! flycheck-golangci-lint)
+
+;; vertico 居中
+(package! vertico-posframe)
+(package! gt)
