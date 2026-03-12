@@ -176,3 +176,7 @@
            (string-replace "\n" " " c)))
   (setq! gt-http-backend (pdd-url-backend :proxy "socks5://127.0.0.1:7897")))
 
+;; 密码管理
+(use-package! secrets
+  :config
+  (message "Secret Service 已加载"))
