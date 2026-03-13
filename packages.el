@@ -58,3 +58,4 @@
 ;; vertico 居中
 (package! vertico-posframe)
 (package! gt)
+(package! visual-fill-column)

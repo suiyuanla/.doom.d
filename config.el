@@ -78,6 +78,10 @@
 ;; keymap
 (map! "C-h" #'backward-delete-char-untabify)        ;; C-h == backspace
 (map! :g "M-0" #'treemacs-select-window)            ;; M-0 focus on treemacs
+(map! "C-:" #'avy-goto-char-timer)                  ;; avy keymap
+(map! "M-g g" #'avy-goto-line)
+(map! "M-g w" #'avy-goto-word-1)
+
 (after! vertico
   (vertico-mouse-mode t))
 
@@ -85,16 +89,16 @@
 (setq-default TeX-engine 'xetex)
 
 ;; 设置org-roam的日记位置，用于和logseq同步
-(setq! org-roam-dailies-directory "journals")
+(setopt org-roam-dailies-directory "journals")
 
 ;; 设置默认的参考文献引用文件
-(setq! citar-bibliography '("~/org/ref.bib"))
-(setq! citar-library-paths '("~/zotero_attachments/")
-       citar-notes-paths '("~/org/roam/refs/"))
-(setq! citar-org-roam-subdir "refs")
+(setopt citar-bibliography '("~/org/ref.bib"))
+(setopt citar-library-paths '("~/zotero_attachments/")
+        citar-notes-paths '("~/org/roam/refs/"))
+(setopt citar-org-roam-subdir "refs")
 
 ;; 设置ogr-noter笔记位置
-(setq! org-noter-notes-search-path '("~/org/" "~/org/roam/" "~/org/roam/refs/"))
+(setopt org-noter-notes-search-path '("~/org/" "~/org/roam/" "~/org/roam/refs/"))
 
 ;; latex formatter
 (after! latex
@@ -139,26 +143,26 @@
     (org-id-get-create) ))
 
 (advice-add 'citar-create-note :after #'citar-add-org-noter-document-property)
-(after! citar-org-roam
-  (add-to-list 'org-roam-capture-templates
-               '("c" "citar literature note" plain "%?"
-                 :target (file+head "%(expand-file-name citar-org-roam-subdir org-roam-directory)/${citar-citekey}.org"
-                                    "#+title: ${citar-title}\n#+subtitle: ${citar-author}, ${citar-date}\n#+created: %U\n#+last_modified: %U\n\n")
-                 :unnarrowed t)))
+p(after! citar-org-roam
+   (add-to-list 'org-roam-capture-templates
+                '("c" "citar literature note" plain "%?"
+                  :target (file+head "%(expand-file-name citar-org-roam-subdir org-roam-directory)/${citar-citekey}.org"
+                                     "#+title: ${citar-title}\n#+subtitle: ${citar-author}, ${citar-date}\n#+created: %U\n#+last_modified: %U\n\n")
+                  :unnarrowed t)))
 
-(setq! citar-org-roam-capture-template-key "c")
+(setopt citar-org-roam-capture-template-key "c")
 
 ;; vertico-postframe 命令栏居中
-(setq! vertico-multiform-commands
-       '((t posframe
-          (vertico-posframe-poshandler . posframe-poshandler-frame-center)
-          (vertico-posframe-fallback-mode . vertico-buffer-mode))))
-(setq! vertico-multiform-mode 1)
+(setopt vertico-multiform-commands
+        '((t posframe
+           (vertico-posframe-poshandler . posframe-poshandler-frame-center)
+           (vertico-posframe-fallback-mode . vertico-buffer-mode))))
+(setopt vertico-multiform-mode 1)
 
 ;; AI插件配置
 (use-package! gptel
   :config
-  (setq!
+  (setopt
    gptel-model 'gemini-2.5-flash
    gptel-backend (gptel-make-gemini "Gemini" :stream t :key gptel-api-key)))
 
@@ -166,17 +170,27 @@
 (use-package! gt
   :config
   (map! "C-c g" #'gt-translate)
-  (setq!
+  (setopt
    gt-langs '(en zh)
    gt-default-translator (gt-translator
                           :engines (gt-google-engine)
                           :render (gt-buffer-render)))
-  (setq! gt-source-text-transformer
-         (lambda (c engine )
-           (string-replace "\n" " " c)))
-  (setq! gt-http-backend (pdd-url-backend :proxy "socks5://127.0.0.1:7897")))
+  (setopt gt-source-text-transformer
+          (lambda (c engine )
+            (string-replace "\n" " " c)))
+  (setopt gt-http-backend (pdd-url-backend :proxy "socks5://127.0.0.1:7897")))
 
 ;; 密码管理
 (use-package! secrets
   :config
-  (message "Secret Service 已加载"))
+  (message "Secret Service loaded"))
+
+;; 让emacs在指定列折行
+(use-package! visual-fill-column
+  :custom
+  (visual-fill-column-width nil)                    ; 折行列数跟随fill-column设置
+  (visual-fill-column-center-text t)               ; nil=左对齐，t=居中
+  (visual-fill-column-enable-sensible-window-split t) ; 宽屏分屏优化（防止弹窗总是上下分割）
+
+  :config
+  (add-hook 'visual-line-mode-hook #'visual-fill-column-for-vline))
